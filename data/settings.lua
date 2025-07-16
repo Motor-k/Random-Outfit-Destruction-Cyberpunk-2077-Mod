@@ -1,0 +1,1 @@
+rate = 10 trigger = 30 damagetrigger = 8 limit = 1 repairOnVehicle = true repairOnSafezone = true
