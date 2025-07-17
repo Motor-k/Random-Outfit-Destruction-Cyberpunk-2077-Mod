@@ -129,9 +129,12 @@ registerForEvent("onInit", function()
             -- if we got a random loadout we equip that loadout otherwise we repair the outfit
             if random then
                 local tempoutfit = getRandomLoadout()
+                -- unequip to prevent ctd due to flat shoes interactions with socks
+                EquipmentEx.UnequipAll()
                 EquipmentEx.LoadOutfit(tempoutfit)
                 itemlist = string.format("[Safezone] Equipped: %s", tempoutfit)
             else
+                EquipmentEx.UnequipAll()
                 EquipmentEx.LoadOutfit("00 - ROD Current Outfit")
                 itemlist = "[Safezone] Outfit Repaired"
             end 
@@ -165,9 +168,12 @@ registerForEvent("onInit", function()
                 -- if we got a random loadout we equip that loadout otherwise we repair the outfit
                 if random then
                     local tempoutfit = getRandomLoadout()
+                    -- unequip to prevent ctd due to flat shoes interactions with socks
+                    EquipmentEx.UnequipAll()
                     EquipmentEx.LoadOutfit(tempoutfit)
                     itemlist = string.format("[Vehicle] Equipped: %s", tempoutfit)
                 else
+                    EquipmentEx.UnequipAll()
                     EquipmentEx.LoadOutfit("00 - ROD Current Outfit")
                     itemlist = "[Vehicle] Outfit Repaired"
                 end     
@@ -305,6 +311,8 @@ registerForEvent("onDraw", function()
 
         if ImGui.SmallButton("Get Random Outfit", -1, 0) then
             local tempoutfit = getRandomLoadout()
+            -- unequip to prevent ctd due to flat shoes interactions with socks
+            EquipmentEx.UnequipAll()
             EquipmentEx.LoadOutfit(tempoutfit)
             itemlist = string.format("Equipped: %s", tempoutfit)
         end
