@@ -7,6 +7,18 @@ Random Outfit Destruction (R.O.D) is a cyber engine tweaks mod inspired by the E
 
 When the player takes damage there is a set chance (that can be edited on the cyber engine tweaks gui via a slider on the overlay)﻿ that 1 or more outfit pieces (visual only - Equipment Ex) get removed.
 
+## New in version 1.3:
+The goal in 1.3 was to implement a system to read loadouts and making break events more consistent with short cooldowns (60 frames)
+
+![](https://i.imgur.com/IspZe3X.png)
+
+- introduced a cooldown (lockstate) between break events to prevent multiple instances of break events happening at the same time
+- Knockdowns now trigger a guaranteed break event (% break rate and limit still applies)
+- Introduced an option to get a random wardrobe loadout when mounting a vehicle or entering a safezone (this took way more effort than i expected :O)
+- Added two new buttons, randomize for giving you the option to get a new random loadout instead of repairing and Get Random Outfit for equiping a random loadout when you click the button :P
+- Fixed instances of vehicle repairing despite no break event having happened when the user loaded the save while inside a vehicle or when a dot effect was still ongoing
+- Changed the preset name ROD creates when saving your current appearence to "00 - ROD Current Outfit" (if you used an older version before, delete "00codeoutfit temp")
+
 ## New in version 1.2.1:
 Minor patch to introduce some quality of life features:
 
