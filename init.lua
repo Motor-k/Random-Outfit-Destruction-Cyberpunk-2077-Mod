@@ -1,4 +1,4 @@
--- init.lua for Random_outfit_damage v1.2.1 by Himawarin
+-- init.lua for Random_outfit_damage v1.3 by Himawarin
 -- Cyberpunk 2077 v2.21 + CET v1.35.0
 -- Removes random equipment (visual-only clothing) on damage taken.
 
@@ -7,6 +7,29 @@ require ("data/settings.lua")
 
 -- get list of valid items from external file
 require("data/slots.lua")
+
+-- Get every saved Equipment-EX outfit name in CET
+function getRandomLoadout()
+    -- Grab the Scriptable Systems Container (this is how equipment ex extends the wardrobe functionality)
+    local ssc = Game.GetScriptableSystemsContainer()
+
+    -- Retrieve the OutfitSystem by its registered name (as per OutfitSystem.GetInstance() in Equipment-EX)
+    local outfitSystem = ssc:Get(CName.new("EquipmentEx.OutfitSystem"))
+    if not outfitSystem or type(outfitSystem.GetOutfits) ~= "function" then
+        print("[WardrobeMod] ERROR: Unable to access OutfitSystem:GetOutfits()")
+        return
+    end
+
+    -- Call GetOutfits() to get an array of CName entries
+    local outfitNames = outfitSystem:GetOutfits()
+
+    -- validate
+    if outfitNames then
+        return NameToString(outfitNames[math.random(#outfitNames)])
+    else
+        print "The user has no Loadouts"
+    end
+end
 
 function removeRandomWardrobeItems()
     -- get player instance
@@ -44,6 +67,14 @@ function removeRandomWardrobeItems()
             -- Convert to the actual TweakDBID string
             local tdbPath  = itemID:GetTDBID()                -- CName
             if math.random() < (rate/100) and removed < limit then
+                
+                -- save the current outfit
+                if not outfitSaved then
+                    EquipmentEx.SaveOutfit("00 - ROD Current Outfit")
+                    outfitSaved = true
+                end
+
+                -- remove and add to list
                 EquipmentEx.UnequipSlot(slotName)
                 table.insert(removelist, tostring(tdbPath.value))
                 removed = removed+1
@@ -71,6 +102,10 @@ registerForEvent("onInit", function()
     activations = 0
     bvents = 0
     openwindow = true
+    -- stop double triggers
+    lockstate = false
+    frametimer = 0
+
     -- Build eex slots cache (Credit: ripperdoc (nexusmods))
     if ExSlots and type(ExSlots) == "table" and #ExSlots > 0 then
         ExSlots_Count = #ExSlots
@@ -91,8 +126,15 @@ registerForEvent("onInit", function()
     ObserveAfter('PlayerPuppet', 'OnEnterSafeZone',function(self)
         -- repair outfit 
         if outfitSaved and repairOnSafezone then
-            EquipmentEx.LoadOutfit("00codeoutfit temp")
-            itemlist = "Outfit Repaired [Safezone]"
+            -- if we got a random loadout we equip that loadout otherwise we repair the outfit
+            if random then
+                local tempoutfit = getRandomLoadout()
+                EquipmentEx.LoadOutfit(tempoutfit)
+                itemlist = string.format("[Safezone] Equipped: %s", tempoutfit)
+            else
+                EquipmentEx.LoadOutfit("00 - ROD Current Outfit")
+                itemlist = "[Safezone] Outfit Repaired"
+            end 
             outfitSaved = false
             -- debug to reset events counter
             if debugrod then
@@ -107,10 +149,28 @@ registerForEvent("onInit", function()
     ObserveAfter("PlayerPuppet", "OnVehicleStateChange", function(self, state)
         -- check if the player is inside the car and driving
         if state == 1 then
+            -- get player instance
+            local player = Game.GetPlayer()
+            if not player then return end
+
+            -- Grab the TransactionSystem *instance*
+            local tsys = Game.GetTransactionSystem()
+            if not tsys or type(tsys.GetItemInSlot) ~= "function" then
+                print("[WardrobeMod] ERROR: TransactionSystem:GetItemInSlot unavailable")
+                return
+            end
+
             -- repair outfit 
             if outfitSaved and repairOnVehicle then
-                EquipmentEx.LoadOutfit("00codeoutfit temp")
-                itemlist = "Outfit Repaired [Vehicle]"
+                -- if we got a random loadout we equip that loadout otherwise we repair the outfit
+                if random then
+                    local tempoutfit = getRandomLoadout()
+                    EquipmentEx.LoadOutfit(tempoutfit)
+                    itemlist = string.format("[Vehicle] Equipped: %s", tempoutfit)
+                else
+                    EquipmentEx.LoadOutfit("00 - ROD Current Outfit")
+                    itemlist = "[Vehicle] Outfit Repaired"
+                end     
                 outfitSaved = false
                 -- debug to reset events counter
                 if debugrod then
@@ -122,14 +182,19 @@ registerForEvent("onInit", function()
         end
     end)
 
+    -- when player gets hit by vehicle (ChargedWhipAttack = 0)
+    ObserveAfter("PlayerPuppet", "OnHitAnimation", function(self, hitEvent)
+        local state = string.match(tostring(hitEvent.attackData.attackType),"%d+")
+        if state == "0" then
+            if not lockstate then
+                lockstate = true
+                itemlist = removeRandomWardrobeItems()
+            end
+        end
+    end)
+
     -- when hp changes
     ObserveAfter("PlayerPuppet", "OnHealthUpdateEvent", function(self, hitEvent)
-        -- save the current outfit
-        if not outfitSaved then
-            EquipmentEx.SaveOutfit("00codeoutfit temp")
-            outfitSaved = true
-        end
-
         -- Grab the player and StatsSystem
         local player   = Game.GetPlayer()
         local statsSys = Game.GetStatsSystem()
@@ -146,13 +211,25 @@ registerForEvent("onInit", function()
 
         -- % trigger chance
         if math.random() < (trigger/100) and hpdelta > damagetrigger then
-            itemlist = removeRandomWardrobeItems()
+            -- to prevent double triggers
+            if not lockstate then
+                lockstate = true
+                itemlist = removeRandomWardrobeItems()
+            end
         end
     end)
 end)
 
 -- drawbuffer
 registerForEvent("onDraw", function()
+    -- timer for lockstate
+    if lockstate and frametimer < 60 then
+        frametimer = frametimer+1
+    else
+        lockstate = false
+        frametimer = 0
+    end
+
     -- if list and bar are hidden hide everything
     if nolist and nobar then
         -- hide the window
@@ -176,12 +253,17 @@ registerForEvent("onDraw", function()
             nobar = true
             -- save settings when hiding
             local f = assert(io.open("data/settings.lua", "w"))
-            f:write("rate = "..rate.." trigger = "..trigger.." damagetrigger = "..damagetrigger.." limit = "..limit.." repairOnVehicle = "..tostring(repairOnVehicle).." repairOnSafezone = "..tostring(repairOnSafezone))
+            f:write("rate = "..rate.." trigger = "..trigger.." damagetrigger = "..damagetrigger.." limit = "..limit.." random = "..tostring(random).." repairOnVehicle = "..tostring(repairOnVehicle).." repairOnSafezone = "..tostring(repairOnSafezone))
             f:close()
             Print("Settings saved to data/settings.lua")
         end
 
         ImGui.NewLine()
+
+        random = ImGui.Checkbox("Randomize", random)
+        if ImGui.IsItemHovered() then
+            ImGui.SetTooltip("Choose a random outfit when the player gets to the vehicle or safezone")
+        end
 
         rate = ImGui.SliderInt(" % rate", rate, 0, 100, "%d")
         if ImGui.IsItemHovered() then
@@ -208,6 +290,8 @@ registerForEvent("onDraw", function()
         ImGui.SameLine()
 
         repairOnSafezone = ImGui.Checkbox("Repair on Safezone", repairOnSafezone)
+
+
         ImGui.NewLine()
     end
 
@@ -216,8 +300,20 @@ registerForEvent("onDraw", function()
         if ImGui.SmallButton("Hide list", -1, 0) then
             nolist = true
         end
-        ImGui.NewLine()
         
+        ImGui.SameLine()
+
+        if ImGui.SmallButton("Get Random Outfit", -1, 0) then
+            local tempoutfit = getRandomLoadout()
+            EquipmentEx.LoadOutfit(tempoutfit)
+            itemlist = string.format("Equipped: %s", tempoutfit)
+        end
+        if ImGui.IsItemHovered() then
+            ImGui.SetTooltip("Choose a random outfit and equip it")
+        end
+
+        ImGui.NewLine()
+
         -- debug code to show break event telemetry
         if not debugrod then
             ImGui.Text("Removed items:")
@@ -227,6 +323,7 @@ registerForEvent("onDraw", function()
 
         --list of destroyed items
         ImGui.TextWrapped(itemlist)
+
     end
 
     ImGui.End()
