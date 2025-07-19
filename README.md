@@ -7,6 +7,19 @@ Random Outfit Destruction (R.O.D) is a cyber engine tweaks mod inspired by the E
 
 When the player takes damage there is a set chance (that can be edited on the cyber engine tweaks gui via a slider on the overlay)﻿ that 1 or more outfit pieces (visual only - Equipment Ex) get removed.
 
+## New in Version 1.4:
+
+Patch 1.4 introduces a new system for immersive clothing recovery and streamlines the code for the equipment list to show all currently removed items (instead of one at a time)
+
+![](https://i.imgur.com/FSZemRU.png)
+
+- __**Imersive clothing recovery:**__: Any item you pick (or buy) that is considered clothes (so gamedataItemType 0 to 6) will repair a random piece in your outfit, when looting (or dissasembling) crafting components (gamedataItemType 27) you will have a 30% chance to repair a random piece
+- __**Partial re-write of the equipment removal system**__: to allow for a more dynamic aproach to equipment removal (listing all currently removed items or re-equiping a previously removed item)
+- __**Optimization fixes**__: Removed some redundant code, simplified loops and streamlined function access in the hope of reducing possible perfomance drops introduced by ROD
+- Fixed a bug that occured where during normal gameplay the window would come into focus via the tab navigation system resulting in the possibility of acidentaly changing settings unintentionally or triggering random equipment generation multiple times
+
+**NOTE**: ROD V1.4 is still targeting cp2077 v2.21, ROD V1.45 will attempt to target cp2077 v2.3 and introduced damage weights instead of the current trigger system (which will remain an optional download on future versions)
+
 ## New in Version 1.3.1:
 Mini patch to fix a potential ctd when swaping from an outfit that has heels and socks to one with flat shoes
 

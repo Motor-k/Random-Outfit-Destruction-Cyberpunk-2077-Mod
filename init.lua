@@ -1,6 +1,6 @@
--- init.lua for Random_outfit_damage v1.3 by Himawarin
+-- init.lua for Random_outfit_damage v1.4 by Himawarin
 -- Cyberpunk 2077 v2.21 + CET v1.35.0
--- Removes random equipment (visual-only clothing) on damage taken.
+-- Removes random equipment (visual-only clothing) on damage taken to simulate combat damage.
 
 -- grab settings for gui default values
 require ("data/settings.lua")
@@ -9,23 +9,34 @@ require ("data/settings.lua")
 require("data/slots.lua")
 
 -- Get every saved Equipment-EX outfit name in CET
-function getRandomLoadout()
-    -- Grab the Scriptable Systems Container (this is how equipment ex extends the wardrobe functionality)
-    local ssc = Game.GetScriptableSystemsContainer()
+function getRandomLoadout(mode, zone)
+    if mode == "random" then
+        -- Grab the Scriptable Systems Container (this is how equipment ex extends the wardrobe functionality)
+        local ssc = Game.GetScriptableSystemsContainer()
 
-    -- Retrieve the OutfitSystem by its registered name (as per OutfitSystem.GetInstance() in Equipment-EX)
-    local outfitSystem = ssc:Get(CName.new("EquipmentEx.OutfitSystem"))
-    if not outfitSystem or type(outfitSystem.GetOutfits) ~= "function" then
-        print("[WardrobeMod] ERROR: Unable to access OutfitSystem:GetOutfits()")
-        return
-    end
+        -- Retrieve the OutfitSystem by its registered name (as per OutfitSystem.GetInstance() in Equipment-EX)
+        local outfitSystem = ssc:Get(CName.new("EquipmentEx.OutfitSystem"))
+        if not outfitSystem or type(outfitSystem.GetOutfits) ~= "function" then
+            print("[WardrobeMod] ERROR: Unable to access OutfitSystem:GetOutfits()")
+            return
+        end
 
-    -- Call GetOutfits() to get an array of CName entries
-    local outfitNames = outfitSystem:GetOutfits()
+        -- Call GetOutfits() to get an array of CName entries
+        local outfitNames = outfitSystem:GetOutfits()
 
-    -- validate
-    if outfitNames then
-        return NameToString(outfitNames[math.random(#outfitNames)])
+        -- validate
+        if outfitNames then
+            local tempoutfit = NameToString(outfitNames[math.random(#outfitNames)])
+            -- unequip to prevent ctd due to flat shoes interactions with socks
+            EquipmentEx.UnequipAll()
+            EquipmentEx.LoadOutfit(tempoutfit)
+            return string.format("[%s] Equipped: %s",zone, tempoutfit)
+        end
+    elseif mode == "repair" then
+        -- unequip to prevent ctd due to flat shoes interactions with socks
+        EquipmentEx.UnequipAll()
+        EquipmentEx.LoadOutfit("00 - ROD Current Outfit")
+        return string.format("[%s] Outfit Repaired", zone)
     else
         print "The user has no Loadouts"
     end
@@ -46,9 +57,6 @@ function removeRandomWardrobeItems()
     -- debug trigger counter
     if debugrod then triggers = triggers+1 end
 
-    -- create a temporary list of all outfit slots removed
-    local removelist = {}
-
     -- count how many outfits were removed
     local removed = 0
     
@@ -67,7 +75,6 @@ function removeRandomWardrobeItems()
             -- Convert to the actual TweakDBID string
             local tdbPath  = itemID:GetTDBID()                -- CName
             if math.random() < (rate/100) and removed < limit then
-                
                 -- save the current outfit
                 if not outfitSaved then
                     EquipmentEx.SaveOutfit("00 - ROD Current Outfit")
@@ -76,32 +83,38 @@ function removeRandomWardrobeItems()
 
                 -- remove and add to list
                 EquipmentEx.UnequipSlot(slotName)
-                table.insert(removelist, tostring(tdbPath.value))
+                table.insert(removelist, {tostring(tdbPath.value), tostring(slotTDB.value)})
                 removed = removed+1
 
                 -- debug activation counter
                 if debugrod then activations = activations+1 end
-
             end
         end
     end
 
+    -- list all currently removed items when a break event happens
+    local etb = {}
+    for i=1,#removelist do
+        etb[i] = string.format("%s \n",removelist[i][1])
+    end
+
     -- return string of items removed
-    return table.concat(removelist)
+    return table.concat(etb)
 
 end
 
 -- Main event registrations
 registerForEvent("onInit", function()
     math.randomseed(os.time())  -- seed RNG once
-    debugrod = false
     outfitSaved = false
+    removelist = {}
     itemlist = ""
     hpdelta = 0
+    -- debug vars
+    debugrod = false
     triggers = 0
     activations = 0
     bvents = 0
-    openwindow = true
     -- stop double triggers
     lockstate = false
     frametimer = 0
@@ -128,16 +141,11 @@ registerForEvent("onInit", function()
         if outfitSaved and repairOnSafezone then
             -- if we got a random loadout we equip that loadout otherwise we repair the outfit
             if random then
-                local tempoutfit = getRandomLoadout()
-                -- unequip to prevent ctd due to flat shoes interactions with socks
-                EquipmentEx.UnequipAll()
-                EquipmentEx.LoadOutfit(tempoutfit)
-                itemlist = string.format("[Safezone] Equipped: %s", tempoutfit)
+                itemlist = getRandomLoadout("random","Safezone")
             else
-                EquipmentEx.UnequipAll()
-                EquipmentEx.LoadOutfit("00 - ROD Current Outfit")
-                itemlist = "[Safezone] Outfit Repaired"
-            end 
+                itemlist = getRandomLoadout("repair","Safezone")
+            end
+            removelist = {} 
             outfitSaved = false
             -- debug to reset events counter
             if debugrod then
@@ -167,16 +175,11 @@ registerForEvent("onInit", function()
             if outfitSaved and repairOnVehicle then
                 -- if we got a random loadout we equip that loadout otherwise we repair the outfit
                 if random then
-                    local tempoutfit = getRandomLoadout()
-                    -- unequip to prevent ctd due to flat shoes interactions with socks
-                    EquipmentEx.UnequipAll()
-                    EquipmentEx.LoadOutfit(tempoutfit)
-                    itemlist = string.format("[Vehicle] Equipped: %s", tempoutfit)
+                    itemlist = getRandomLoadout("random","Vehicle")
                 else
-                    EquipmentEx.UnequipAll()
-                    EquipmentEx.LoadOutfit("00 - ROD Current Outfit")
-                    itemlist = "[Vehicle] Outfit Repaired"
-                end     
+                    itemlist = getRandomLoadout("repair","Vehicle")
+                end
+                removelist = {}   
                 outfitSaved = false
                 -- debug to reset events counter
                 if debugrod then
@@ -184,6 +187,31 @@ registerForEvent("onInit", function()
                     activations = 0
                     triggers = 0
                 end
+            end
+        end
+    end)
+
+    -- Immersive clothing recovery: when player picks item
+    ObserveAfter("PlayerPuppet", "OnItemAddedToInventory", function(_, event)
+        local data     = event.itemData
+        local itemType = data:GetItemType()
+
+        -- Option A: parse via string.match
+        local rawType  = tonumber(string.match(tostring(itemType), "%d+"))
+        -- when player picks a outfit type
+        if rawType and rawType >= 0 and rawType <= 6 then
+            local index = math.random(#removelist)
+            itemlist = string.format("[EquipFix] equipped %s",removelist[index][1])
+            EquipmentEx.EquipItem(removelist[index][1], removelist[index][2])
+            table.remove(removelist, index)
+        -- when player picks a crafting type
+        elseif rawType == 27 then
+            -- 30% chance to repair
+            if math.random() < (0.30) then
+                local index = math.random(#removelist)
+                itemlist = string.format("[CraftFix] equipped %s",removelist[index][1])
+                EquipmentEx.EquipItem(removelist[index][1], removelist[index][2])
+                table.remove(removelist, index)
             end
         end
     end)
@@ -244,11 +272,13 @@ registerForEvent("onDraw", function()
         return
     end
 
+    -- prevent tab navigation (a known focus bug happens otherwise)
+    ImGui.PushItemFlag(ImGuiItemFlags.NoTabStop, true)
     -- draw the window
     ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, 360, 260)
     if not ImGui.Begin("Random Outfit Destruction", true, ImGuiWindowFlags.NoTitleBar + ImGuiWindowFlags.NoBackground) then
-    ImGui.End()
-    return
+        ImGui.End()
+        return
     end
 
     ImGui.Spacing()
@@ -310,11 +340,11 @@ registerForEvent("onDraw", function()
         ImGui.SameLine()
 
         if ImGui.SmallButton("Get Random Outfit", -1, 0) then
-            local tempoutfit = getRandomLoadout()
-            -- unequip to prevent ctd due to flat shoes interactions with socks
-            EquipmentEx.UnequipAll()
-            EquipmentEx.LoadOutfit(tempoutfit)
-            itemlist = string.format("Equipped: %s", tempoutfit)
+            itemlist = getRandomLoadout("random","Random")
+            removelist = {}
+            if outfitSaved then
+                outfitSaved = false
+            end
         end
         if ImGui.IsItemHovered() then
             ImGui.SetTooltip("Choose a random outfit and equip it")
@@ -326,7 +356,7 @@ registerForEvent("onDraw", function()
         if not debugrod then
             ImGui.Text("Removed items:")
         else
-            ImGui.Text("Break atempts: "..bvents.." | Triggers: "..triggers.." | Activations : "..activations.." | Removed items:")
+            ImGui.Text("Break atempts: "..bvents.." | Triggers: "..triggers.." | Activations : "..activations.."\nRemoved items:")
         end
 
         --list of destroyed items
