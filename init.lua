@@ -199,13 +199,13 @@ registerForEvent("onInit", function()
         -- Option A: parse via string.match
         local rawType  = tonumber(string.match(tostring(itemType), "%d+"))
         -- when player picks a outfit type
-        if rawType and rawType >= 0 and rawType <= 6 then
+        if rawType and rawType >= 0 and rawType <= 6 and next(removelist) ~= nil then
             local index = math.random(#removelist)
             itemlist = string.format("[EquipFix] equipped %s",removelist[index][1])
             EquipmentEx.EquipItem(removelist[index][1], removelist[index][2])
             table.remove(removelist, index)
         -- when player picks a crafting type
-        elseif rawType == 27 then
+        elseif rawType == 27 and next(removelist) ~= nil then
             -- 30% chance to repair
             if math.random() < (0.30) then
                 local index = math.random(#removelist)
