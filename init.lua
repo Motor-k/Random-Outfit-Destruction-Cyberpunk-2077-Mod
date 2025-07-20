@@ -213,6 +213,9 @@ registerForEvent("onInit", function()
                 EquipmentEx.EquipItem(removelist[index][1], removelist[index][2])
                 table.remove(removelist, index)
             end
+        -- if everything is fixed disable unecessary repairs
+        elseif next(removelist) == nil then
+            outfitSaved = false
         end
     end)
 
@@ -257,7 +260,7 @@ end)
 -- drawbuffer
 registerForEvent("onDraw", function()
     -- timer for lockstate
-    if lockstate and frametimer < 60 then
+    if lockstate and frametimer < 180 then
         frametimer = frametimer+1
     else
         lockstate = false
@@ -340,10 +343,14 @@ registerForEvent("onDraw", function()
         ImGui.SameLine()
 
         if ImGui.SmallButton("Get Random Outfit", -1, 0) then
-            itemlist = getRandomLoadout("random","Random")
-            removelist = {}
-            if outfitSaved then
-                outfitSaved = false
+            -- lockstate to prevent bugged outfits
+            if not lockstate then
+                lockstate = true
+                itemlist = getRandomLoadout("random","Random")
+                removelist = {}
+                if outfitSaved then
+                    outfitSaved = false
+                end
             end
         end
         if ImGui.IsItemHovered() then
