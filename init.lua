@@ -1,5 +1,5 @@
--- init.lua for Random_outfit_damage v1.4 by Himawarin
--- Cyberpunk 2077 v2.21 + CET v1.35.0
+-- init.lua for Random_outfit_damage v1.4.1 by Himawarin
+-- Cyberpunk 2077 v2.3 + CET v1.36.0
 -- Removes random equipment (visual-only clothing) on damage taken to simulate combat damage.
 
 -- grab settings for gui default values
