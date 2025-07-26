@@ -1,4 +1,4 @@
--- init.lua for Random_outfit_damage v1.4.1 by Himawarin
+-- init.lua for Random_outfit_damage v1.4.2 by Himawarin
 -- Cyberpunk 2077 v2.3 + CET v1.36.0
 -- Removes random equipment (visual-only clothing) on damage taken to simulate combat damage.
 
@@ -7,6 +7,38 @@ require ("data/settings.lua")
 
 -- get list of valid items from external file
 require("data/slots.lua")
+
+-- hotkey assignment on cet menu
+registerHotkey('ToggleUi', 'Key to show or hide everything in the ROD interface', function()
+    nobar = not nobar
+    nolist = nobar
+end)
+
+registerHotkey('ToggleBar', 'Key to show or hide ROD settings bar', function()
+    nobar = not nobar
+end)
+
+registerHotkey('ToggleList', 'key to show or hide ROD item list interface', function()
+    nolist = not nolist
+end)
+
+function saveSettings()
+    local settings = {
+        "rate = "..rate,
+        " trigger = "..trigger,
+        " damagetrigger = "..damagetrigger,
+        " limit = "..limit,
+        " nobar = "..tostring(nobar),
+        " nolist = "..tostring(nolist),
+        " random = "..tostring(random),
+        " repairOnVehicle = "..tostring(repairOnVehicle),
+        " repairOnSafezone = "..tostring(repairOnSafezone),
+    }
+    local f = assert(io.open("data/settings.lua", "w"))
+    f:write(table.concat(settings))
+    f:close()
+    Print("Settings saved to data/settings.lua")
+end
 
 -- Get every saved Equipment-EX outfit name in CET
 function getRandomLoadout(mode, zone)
@@ -288,13 +320,15 @@ registerForEvent("onDraw", function()
 
     -- draw the settings menu
     if not nobar then
+        if ImGui.SmallButton("Save settings", -1, 0) then
+            saveSettings()
+        end
+
+        ImGui.SameLine()
+        
         if ImGui.SmallButton("Hide settings", -1, 0) and not nobar then
             nobar = true
-            -- save settings when hiding
-            local f = assert(io.open("data/settings.lua", "w"))
-            f:write("rate = "..rate.." trigger = "..trigger.." damagetrigger = "..damagetrigger.." limit = "..limit.." random = "..tostring(random).." repairOnVehicle = "..tostring(repairOnVehicle).." repairOnSafezone = "..tostring(repairOnSafezone))
-            f:close()
-            Print("Settings saved to data/settings.lua")
+            saveSettings()
         end
 
         ImGui.NewLine()
@@ -330,7 +364,6 @@ registerForEvent("onDraw", function()
 
         repairOnSafezone = ImGui.Checkbox("Repair on Safezone", repairOnSafezone)
 
-
         ImGui.NewLine()
     end
 
@@ -338,6 +371,7 @@ registerForEvent("onDraw", function()
     if not nolist then
         if ImGui.SmallButton("Hide list", -1, 0) then
             nolist = true
+            saveSettings()
         end
         
         ImGui.SameLine()

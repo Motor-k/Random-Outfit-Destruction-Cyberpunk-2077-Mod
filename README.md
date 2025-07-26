@@ -7,6 +7,12 @@ Random Outfit Destruction (R.O.D) is a cyber engine tweaks mod inspired by the E
 
 When the player takes damage there is a set chance (that can be edited on the cyber engine tweaks gui via a slider on the overlay)﻿ that 1 or more outfit pieces (visual only - Equipment Ex) get removed.
 
+## New in Version 1.4.2:
+
+Hotkey support and visibility settings
+
+![](https://i.imgur.com/PIJIX9J.png)
+
 ## New in Version 1.4.1:
 Mini patch now **targeting Cyberpunk version 2.3** (tested and working)(update dependencies)
 
