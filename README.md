@@ -7,6 +7,17 @@ Random Outfit Destruction (R.O.D) is a cyber engine tweaks mod inspired by the E
 
 When the player takes damage there is a set chance (that can be edited on the cyber engine tweaks gui via a slider on the overlay)﻿ that 1 or more outfit pieces (visual only - Equipment Ex) get removed.
 
+## new in Version 1.4.5
+Partial Code re-write and introduction of damage weights.
+
+- Fixed an issue in the damage detection system where hp % values were being counted as flat values resulting in abnormaly low damage values.
+- Information such as craft or outfit repairs no longer hide your broken item list that now also gets updated in real time.
+- Re-wrote the entire equipment removal system and break event trigger system to be more dynamic, support weighted equipment removal rates based on damage taken and as a side-effect, be less predictable (one of the consequences is the fact that the break event order no longer follows what you set on slots.lua linearly).
+- Reduced the number of loops and grouped everything in generic functions which should hopefully result in slightly more performant code.
+- Added a toggle to swap between % break event trigger chance and weighted break event trigger chance.
+- All variables are now in vars.lua (this includes the new break weight thresholds that a user can modify to their liking)
+- Break weights now also affect the max limit of how many equipment pieces can break in a single trigger, when a break event is triggered the weight is taken into account and the limit is a random between 1 and weight % of currently equiped items (so lets say weight is 36% and we have five items its 36% of 5 rounded upwards)
+
 ## New in Version 1.4.2:
 
 Hotkey support and visibility settings

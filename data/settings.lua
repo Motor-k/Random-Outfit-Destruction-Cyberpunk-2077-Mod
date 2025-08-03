@@ -1,1 +1,1 @@
-rate = 50 trigger = 20 damagetrigger = 8 limit = 1 nobar = true nolist = false random = true repairOnVehicle = false repairOnSafezone = true
+rate = 50 trigger = 20 damagetrigger = 20 limit = 1 nobar = true nolist = false random = true repairOnVehicle = false repairOnSafezone = true dynamic = true
